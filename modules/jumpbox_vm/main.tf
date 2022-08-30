@@ -17,9 +17,9 @@ resource "azurerm_network_security_group" "vm_nsg" {
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "10.0.0.0/24"
+    destination_address_prefix = "10.0.1.0/24"
   }
 }
 
@@ -71,17 +71,21 @@ resource "azurerm_linux_virtual_machine" "jumpbox_vm" {
       type     = "ssh"
       user     = var.vm_user
       password = var.vm_password
+      timeout  = "4m"
     }
-
+    
     inline = [
       "sudo apt-get update && sudo apt-get install -y apt-transport-https gnupg2",
       "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -",
       "echo 'deb https://apt.kubernetes.io/ kubernetes-xenial main' | sudo tee -a /etc/apt/sources.list.d/kubernetes.list",
       "sudo apt-get update",
       "sudo apt-get install -y kubectl",
+      "sudo apt-get install docker.io -y",
       "curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash"
     ]
   }
+
+  depends_on = [azurerm_network_interface.vm_inf, azurerm_network_security_group.vm_nsg]
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "hublink" {
